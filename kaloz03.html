@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kalóz algoritmusjáték</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f0f0f0;
+}
+
+.container{
+display:flex;
+justify-content:center;
+gap:30px;
+margin-top:20px;
+}
+
+.instructions{
+width:320px;
+background:white;
+border:1px solid #999;
+padding:15px;
+line-height:1.4em;
+}
+
+#grid{
+display:grid;
+grid-template-columns:repeat(5,60px);
+grid-template-rows:repeat(5,60px);
+gap:2px;
+}
+
+.cell{
+background:white;
+border:1px solid #999;
+font-size:28px;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.controls{
+text-align:center;
+margin-top:10px;
+}
+
+#message{
+text-align:center;
+font-size:22px;
+height:26px;
+margin-top:10px;
+}
+
+#leaderboard{
+text-align:center;
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2 style="text-align:center">Algoritmusjáték</h2>
+<h3 style="text-align:center">Szombathelyi Reguly Antal Nyelvoktató Nemzetiségi Általános Iskola</h3>
+
+<div id="message"></div>
+
+<div class="container">
+
+<div class="instructions">
+
+<b>Utasítások</b><br><br>
+
+A kalózt el kell juttatnod a hajójához, összeszedve az összes ékkövet. Utasítások sorozatát írod le, amelyek végén a kalóz célba ér. 
+
+<hr>
+J: jobbra fordítja a kalózt, de az a helyén marad<br>
+B: balra fordítja a kalózt, de az a helyén marad<br>
+E: a kalóz előre megy (amerre éppen a kalóz néz)<br>
+H: a kalóz hátra megy (a pillanatnyi irányához képest ellentétes irányba)<br><br>
+<hr>
+<h5>Az egyes utasításokat válaszd el szóközzel vagy vesszővel. Használhatsz kis- és nagybetűt is. Írhatod így:  
+<b>"2e"</b> vagy <b>"e2"</b> vagy <b>"E e"</b>, ezek egyenértékűek.
+</h5>
+</div>
+
+<div style="position:relative;width:302px">
+
+<div id="grid"></div>
+
+<canvas id="pathCanvas"
+width="302"
+height="302"
+style="position:absolute;left:0;top:0;pointer-events:none"></canvas>
+
+</div>
+
+</div>
+
+<div class="controls">
+
+<input id="program"
+style="width:380px"
+placeholder="Példa: 2e j e b h2 vagy  E E J E B H H">
+
+<br><br>
+
+<input id="player" placeholder="Név">
+
+<br><br>
+
+<button onclick="runProgram()">INDÍT</button>
+<button onclick="newPuzzle(true)">ÚJ PÁLYA</button>
+
+</div>
+
+<div id="leaderboard">
+<h3>Eredmények</h3>
+<ul id="scores"></ul>
+</div>
+
+<script>
+
+const size=5
+const arrows=["↑","→","↓","←"]
+
+let pirate
+let startPirate
+let ship
+
+let jewels=[]
+let initialJewels=[]
+
+let path=[]
+let commandQueue=[]
+let animating=false
+
+let startTime
+let solveTime
+
+const grid=document.getElementById("grid")
+const canvas=document.getElementById("pathCanvas")
+const ctx=canvas.getContext("2d")
+
+function initGrid(){
+
+grid.innerHTML=""
+
+for(let y=0;y<size;y++)
+for(let x=0;x<size;x++){
+
+let d=document.createElement("div")
+d.className="cell"
+d.id="c"+x+"_"+y
+grid.appendChild(d)
+
+}
+
+}
+
+function randomCell(){
+
+return{
+x:Math.floor(Math.random()*size),
+y:Math.floor(Math.random()*size)
+}
+
+}
+
+function randomDirectionInside(x,y){
+
+let dirs=[]
+
+if(y>0) dirs.push(0)
+if(x<size-1) dirs.push(1)
+if(y<size-1) dirs.push(2)
+if(x>0) dirs.push(3)
+
+return dirs[Math.floor(Math.random()*dirs.length)]
+
+}
+
+function newPuzzle(clearProgram=false){
+
+if(clearProgram)
+document.getElementById("program").value=""
+
+let p=randomCell()
+
+pirate={
+x:p.x,
+y:p.y,
+dir:randomDirectionInside(p.x,p.y)
+}
+
+startPirate={...pirate}
+
+do{
+ship=randomCell()
+}
+while(ship.x==pirate.x && ship.y==pirate.y)
+
+jewels=[]
+
+while(jewels.length<5){
+
+let j=randomCell()
+
+if(
+(j.x==pirate.x && j.y==pirate.y) ||
+(j.x==ship.x && j.y==ship.y) ||
+jewels.some(k=>k.x==j.x && k.y==j.y)
+) continue
+
+jewels.push(j)
+
+}
+
+initialJewels=JSON.parse(JSON.stringify(jewels))
+
+restoreInitialState()
+
+startTime=Date.now()
+
+}
+
+function restoreInitialState(){
+
+pirate={...startPirate}
+
+jewels=JSON.parse(JSON.stringify(initialJewels))
+
+path=[]
+path.push({x:pirate.x,y:pirate.y})
+
+ctx.clearRect(0,0,302,302)
+
+draw()
+
+}
+
+function draw(){
+
+for(let y=0;y<size;y++)
+for(let x=0;x<size;x++)
+document.getElementById("c"+x+"_"+y).textContent=""
+
+document.getElementById("c"+ship.x+"_"+ship.y).textContent="⛵"
+
+jewels.forEach(j=>{
+document.getElementById("c"+j.x+"_"+j.y).textContent="💎"
+})
+
+document.getElementById("c"+pirate.x+"_"+pirate.y).textContent="🏴‍☠️"+arrows[pirate.dir]
+
+}
+
+function drawPath(){
+
+ctx.strokeStyle="red"
+ctx.lineWidth=4
+ctx.beginPath()
+
+for(let i=0;i<path.length;i++){
+
+let px=path[i].x*62+31
+let py=path[i].y*62+31
+
+if(i==0) ctx.moveTo(px,py)
+else ctx.lineTo(px,py)
+
+}
+
+ctx.stroke()
+
+}
+
+function parseProgram(str){
+
+let tokens=str.split(/[ ,]+/)
+let cmds=[]
+
+for(let t of tokens){
+
+if(t=="") continue
+
+t=t.toUpperCase()
+
+let m1=t.match(/^(\d+)([EHBJ])$/)
+let m2=t.match(/^([EHBJ])(\d+)$/)
+let m3=t.match(/^([EHBJ])$/)
+
+let count,cmd
+
+if(m1){count=parseInt(m1[1]);cmd=m1[2]}
+else if(m2){count=parseInt(m2[2]);cmd=m2[1]}
+else if(m3){count=1;cmd=m3[1]}
+else return null
+
+cmds.push({n:count,c:cmd})
+
+}
+
+return cmds
+
+}
+
+function expandCommands(cmds){
+
+let list=[]
+
+cmds.forEach(c=>{
+for(let i=0;i<c.n;i++) list.push(c.c)
+})
+
+return list
+
+}
+
+function stepForward(){
+
+if(pirate.dir==0) pirate.y--
+if(pirate.dir==1) pirate.x++
+if(pirate.dir==2) pirate.y++
+if(pirate.dir==3) pirate.x--
+
+path.push({x:pirate.x,y:pirate.y})
+
+}
+
+function stepBack(){
+
+if(pirate.dir==0) pirate.y++
+if(pirate.dir==1) pirate.x--
+if(pirate.dir==2) pirate.y--
+if(pirate.dir==3) pirate.x++
+
+path.push({x:pirate.x,y:pirate.y})
+
+}
+
+function turnLeft(){pirate.dir=(pirate.dir+3)%4}
+function turnRight(){pirate.dir=(pirate.dir+1)%4}
+
+function collect(){
+
+jewels=jewels.filter(j=>{
+return !(j.x==pirate.x && j.y==pirate.y)
+})
+
+}
+
+function animate(){
+
+if(commandQueue.length==0){
+checkResult()
+return
+}
+
+let cmd=commandQueue.shift()
+
+if(cmd=="E") stepForward()
+if(cmd=="H") stepBack()
+if(cmd=="J") turnRight()
+if(cmd=="B") turnLeft()
+
+if(pirate.x<0||pirate.y<0||pirate.x>=size||pirate.y>=size){
+drawPath()
+fail()
+return
+}
+
+collect()
+
+draw()
+drawPath()
+
+setTimeout(animate,350)
+
+}
+
+function runProgram(){
+
+if(animating) return
+
+let endTime=Date.now()
+solveTime=((endTime-startTime)/1000).toFixed(1)
+
+let text=document.getElementById("program").value
+let cmds=parseProgram(text)
+
+if(cmds==null){
+
+alert("HIBÁS UTASÍTÁS")
+return
+
+}
+
+restoreInitialState()
+
+commandQueue=expandCommands(cmds)
+
+animating=true
+animate()
+
+}
+
+function checkResult(){
+
+animating=false
+
+if(jewels.length==0 &&
+pirate.x==ship.x &&
+pirate.y==ship.y){
+
+document.getElementById("message").style.color="green"
+document.getElementById("message").textContent="HURRÁ! ("+solveTime+" s)"
+
+let name=document.getElementById("player").value||"névtelen"
+
+let li=document.createElement("li")
+li.textContent=name+" — "+solveTime+" s"
+
+document.getElementById("scores").appendChild(li)
+
+setTimeout(()=>newPuzzle(true),800)
+
+}else{
+
+fail()
+
+}
+
+}
+
+function fail(){
+
+animating=false
+
+setTimeout(()=>{
+
+alert("EZ MOST NEM SIKERÜLT")
+
+newPuzzle(true)
+
+},300)
+
+}
+
+document.getElementById("program").addEventListener(
+"keydown",
+function(e){
+if(e.key==="Enter") runProgram()
+})
+
+initGrid()
+newPuzzle(true)
+
+</script>
+
+</body>
+</html>
