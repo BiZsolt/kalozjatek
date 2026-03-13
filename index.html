@@ -36,8 +36,8 @@
         <b>B:</b> Balra fordul<br>
         <b>E:</b> Előre lép<br>
         <b>H:</b> Hátra lép<br><br>
-	<br>Az egyes utasításokat válaszd el szóközzel vagy vesszővel.
-	<br>Használhatsz kis- és nagybetűt is.
+	<br><br>Az egyes utasításokat válaszd el szóközzel vagy vesszővel.
+	<br><br>Használhatsz kis- és nagybetűt is.
 
 <br>Írhatod így: "2e" vagy "e2" vagy "E e", ezek egyenértékűek
 
@@ -49,7 +49,7 @@
         <div id="board"></div>
         <br>
         <input id="name" placeholder="Játékos neve"><br>
-        <input id="commands" placeholder="Írd ide az utasításokat..." autocomplete="off">
+        <input id="commands" placeholder="Írd ide az utasításokat... pl. e3 j e2 b h" autocomplete="off">
         <br>
         <button onclick="run()">INDÍT (Enter)</button>
         <button onclick="newGame()">Új pálya</button>
@@ -237,7 +237,7 @@ function evaluate() {
         let name = document.getElementById("name").value || "Ismeretlen kalóz";
         let li = document.createElement("li");
         li.className = size === 5 ? "basic" : "advanced-score";
-        li.textContent = `${name} | ${timeTaken.toFixed(1)}s | ${collected} ékszer`;
+        li.textContent = `${name} | ${timeTaken.toFixed(1)}s | ${collected} ékkő`;
         document.getElementById("scores").appendChild(li);
 
         if (timeTaken < 60 && !isAdvanced) {
@@ -246,7 +246,7 @@ function evaluate() {
         }
         newGame();
     } else {
-        alert("Sajnos nem sikerült. Gyűjtsd össze az összes ékszert és érj a hajóhoz!");
+        alert("Sajnos nem sikerült. Gyűjtsd össze az összes ékkövet és érj a hajóhoz!");
         newGame();
     }
 }
