@@ -1,465 +1,268 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-<meta charset="UTF-8">
-<title>Algoritmusjáték</title>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f0f0f0;
-text-align:center;
-margin:0;
-padding:20px;
-}
-
-h1{margin-bottom:5px;}
-h2{margin-top:0;font-weight:normal;}
-
-#layout{
-display:flex;
-justify-content:center;
-gap:30px;
-}
-
-#instructions{
-width:300px;
-background:white;
-border:2px solid #aaa;
-padding:15px;
-text-align:left;
-}
-
-#board{
-display:grid;
-margin:auto;
-background:white;
-border:3px solid black;
-position:relative;
-}
-
-.cell{
-border:1px solid #ccc;
-width:40px;
-height:40px;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:22px;
-}
-
-#pathCanvas{
-position:absolute;
-top:0;
-left:0;
-pointer-events:none;
-}
-
-#commands{
-width:350px;
-}
-
-#cmdDisplay{
-margin-top:10px;
-font-size:18px;
-}
-
-.activeCmd{
-background:yellow;
-padding:2px 4px;
-}
-
-#steps{
-margin-top:5px;
-font-weight:bold;
-}
-
-#advanced{
-color:darkred;
-font-weight:bold;
-font-size:20px;
-margin-bottom:10px;
-}
-
-#scoreboard{
-margin-top:15px;
-background:white;
-border:2px solid #aaa;
-padding:10px;
-}
-
-.basic{color:blue;}
-.advanced{color:green;}
-
-button,input{
-font-size:16px;
-padding:5px;
-margin-top:8px;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <title>Algoritmusjáték - Pro</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; text-align: center; margin: 0; padding: 20px; color: #333; }
+        #layout { display: flex; justify-content: center; gap: 40px; margin-top: 20px; }
+        #instructions { width: 280px; background: #fff; border: 2px solid #ccc; padding: 20px; text-align: left; border-radius: 8px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
+        #board { display: grid; margin: auto; background: #fff; border: 4px solid #444; position: relative; border-radius: 4px; }
+        .cell { border: 1px solid #eee; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        #pathCanvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+        #commands { width: 380px; padding: 10px; border: 2px solid #aaa; border-radius: 5px; }
+        #cmdDisplay { margin-top: 15px; font-size: 18px; min-height: 1.5em; color: #666; }
+        .activeCmd { background: #ffeb3b; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: #000; }
+        #steps { margin-top: 10px; font-weight: bold; color: #d32f2f; }
+        #advanced { color: #b71c1c; font-weight: bold; font-size: 22px; margin-bottom: 10px; }
+        #scoreboard { margin-top: 25px; background: #fff; border: 2px solid #ccc; padding: 15px; border-radius: 8px; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .basic { color: #1976d2; margin-bottom: 5px; }
+        .advanced-score { color: #388e3c; margin-bottom: 5px; font-weight: bold; }
+        button { font-size: 16px; padding: 8px 16px; margin: 10px 5px; cursor: pointer; border-radius: 5px; border: 1px solid #999; background: #eee; transition: 0.2s; }
+        button:hover { background: #ddd; }
+        input:focus { outline: none; border-color: #1976d2; }
+    </style>
 </head>
-
 <body>
 
 <h1>Algoritmusjáték</h1>
 <h5>Szombathelyi Reguly Antal Nyelvoktató Nemzetiségi Általános Iskola, Biró Zsolt</h5>
-
 <div id="advanced"></div>
 
 <div id="layout">
+    <div id="instructions">
+        <b>Utasítások</b><br><br>
+        <b>J:</b> Jobbra fordul<br>
+        <b>B:</b> Balra fordul<br>
+        <b>E:</b> Előre lép<br>
+        <b>H:</b> Hátra lép<br><br>
+	<br>Az egyes utasításokat válaszd el szóközzel vagy vesszővel.
+	<br>Használhatsz kis- és nagybetűt is.
 
-<div id="instructions">
+<br>Írhatod így: "2e" vagy "e2" vagy "E e", ezek egyenértékűek
 
-<b>Utasítások</b><br><br>
+        <i>Példa: 2e j 3e b 1e</i><br><br>
+        <b>Enter:</b> Indítás
+    </div>
 
-<b>J</b>: jobbra forgatja el a kalózt (negyed fordulat), de az a helyén marad<br><br>
-<b>B</b>: balra forgatja el a kalózt (negyed fordulat), de az a helyén marad<br><br>
-<b>E</b>: a kalóz előre megy (amerre éppen a kalóz néz)<br><br>
-<b>H</b>: a kalóz hátra megy (a pillanatnyi irányához képest ellentétes irányba)<br><br><br>
+    <div>
+        <div id="board"></div>
+        <br>
+        <input id="name" placeholder="Játékos neve"><br>
+        <input id="commands" placeholder="Írd ide az utasításokat..." autocomplete="off">
+        <br>
+        <button onclick="run()">INDÍT (Enter)</button>
+        <button onclick="newGame()">Új pálya</button>
+        <button onclick="fullscreen()">Teljes képernyő</button>
 
-Az egyes utasításokat válaszd el szóközzel vagy vesszővel.<br>
-Használhatsz kis- és nagybetűt is.<br><br>
+        <div id="cmdDisplay"></div>
+        <div id="steps"></div>
 
-Írhatod így:  
-"2e" vagy "e2" vagy "E e", ezek egyenértékűek
-
-</div>
-
-<div>
-
-<div id="board"></div>
-
-<br>
-
-<input id="name" placeholder="Név"><br>
-
-<input id="commands"
-placeholder="Példa: 2e j e b h2 vagy  E E J E B H H">
-
-<br>
-
-<button onclick="run()">INDÍT</button>
-<button onclick="newGame()">Új pálya</button>
-<button onclick="fullscreen()">Teljes képernyő</button>
-
-<div id="cmdDisplay"></div>
-<div id="steps"></div>
-
-<div id="scoreboard">
-<b>Sikeres megoldások</b>
-<ul id="scores"></ul>
-</div>
-
-</div>
+        <div id="scoreboard">
+            <b>Sikeres megoldások</b>
+            <ul id="scores" style="text-align: left; padding-left: 20px;"></ul>
+        </div>
+    </div>
 </div>
 
 <script>
+let size = 5;
+let jewelsCount = 5;
+let isAdvanced = false;
+let boardState = [];
+let pirate = {};
+let ship = {};
+let collected = 0;
+let startTime;
+const arrows = ["↑", "→", "↓", "←"];
 
-let size=5
-let jewels=5
-let advanced=false
+function newGame() {
+    const boardDiv = document.getElementById("board");
+    boardDiv.innerHTML = "";
+    boardState = Array.from({ length: size }, () => Array.from({ length: size }, () => ({ hasJewel: false })));
+    collected = 0;
 
-let board=[]
-let pirate={}
-let ship={}
-let collected=0
-let startTime
+    boardDiv.style.gridTemplateColumns = `repeat(${size}, 45px)`;
+    boardDiv.style.width = size * 45 + "px";
 
-const boardDiv=document.getElementById("board")
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            let d = document.createElement("div");
+            d.className = "cell";
+            d.id = `c${x}_${y}`;
+            boardDiv.appendChild(d);
+        }
+    }
 
-function newGame(){
+    // Ship placement
+    ship = { x: Math.floor(Math.random() * size), y: Math.floor(Math.random() * size) };
+    
+    // Jewels placement
+    let placed = 0;
+    while (placed < jewelsCount) {
+        let x = Math.floor(Math.random() * size);
+        let y = Math.floor(Math.random() * size);
+        if (!boardState[y][x].hasJewel && !(x === ship.x && y === ship.y)) {
+            boardState[y][x].hasJewel = true;
+            placed++;
+        }
+    }
 
-board=[]
-boardDiv.innerHTML=""
-collected=0
+    // Pirate starting position on edges
+    let side = Math.floor(Math.random() * 4);
+    if (side === 0) pirate = { x: Math.floor(Math.random() * size), y: 0, dir: 2 };
+    else if (side === 1) pirate = { x: Math.floor(Math.random() * size), y: size - 1, dir: 0 };
+    else if (side === 2) pirate = { x: 0, y: Math.floor(Math.random() * size), dir: 1 };
+    else pirate = { x: size - 1, y: Math.floor(Math.random() * size), dir: 3 };
 
-boardDiv.style.gridTemplateColumns=`repeat(${size},40px)`
-boardDiv.style.gridTemplateRows=`repeat(${size},40px)`
-boardDiv.style.width=size*40+"px"
-boardDiv.style.height=size*40+"px"
+    let canvas = document.createElement("canvas");
+    canvas.id = "pathCanvas";
+    canvas.width = size * 45; canvas.height = size * 45;
+    boardDiv.appendChild(canvas);
 
-for(let y=0;y<size;y++){
-board[y]=[]
-for(let x=0;x<size;x++){
-
-let d=document.createElement("div")
-d.className="cell"
-d.id=`c${x}_${y}`
-boardDiv.appendChild(d)
-
-board[y][x]={jewel:false}
-
-}
-}
-
-placeJewels()
-placeShip()
-placePirate()
-
-let canvas=document.createElement("canvas")
-canvas.id="pathCanvas"
-canvas.width=size*40
-canvas.height=size*40
-boardDiv.appendChild(canvas)
-
-document.getElementById("commands").value=""
-document.getElementById("cmdDisplay").innerHTML=""
-document.getElementById("steps").innerHTML=""
-
-startTime=Date.now()
-
-}
-
-function placeJewels(){
-
-let placed=0
-
-while(placed<jewels){
-
-let x=Math.floor(Math.random()*size)
-let y=Math.floor(Math.random()*size)
-
-if(!board[y][x].jewel && !(x===ship.x && y===ship.y)){
-
-board[y][x].jewel=true
-document.getElementById(`c${x}_${y}`).innerHTML="💎"
-placed++
-
+    render();
+    document.getElementById("steps").innerText = "";
+    document.getElementById("cmdDisplay").innerHTML = "";
+    startTime = Date.now();
 }
 
+function render() {
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            let cell = document.getElementById(`c${x}_${y}`);
+            let content = "";
+            if (x === ship.x && y === ship.y) content = "🚢";
+            if (boardState[y][x].hasJewel) content = "💎";
+            if (x === pirate.x && y === pirate.y) {
+                let pIcon = arrows[pirate.dir];
+                content = (x === ship.x && y === ship.y ? "🚢" : "") + pIcon;
+            }
+            cell.innerHTML = content;
+        }
+    }
 }
 
+function parse(text) {
+    let parts = text.toUpperCase().replace(/,/g, " ").trim().split(/\s+/);
+    let result = [];
+    for (let p of parts) {
+        if (!p) continue;
+        let match = p.match(/^(\d*)([JBEH])(\d*)$/);
+        if (!match) return null;
+        let n = parseInt(match[1] || match[3] || 1);
+        for (let i = 0; i < n; i++) result.push(match[2]);
+    }
+    return result;
 }
 
-function placeShip(){
+function run() {
+    const inputField = document.getElementById("commands");
+    let text = inputField.value;
+    let cmds = parse(text);
+    
+    if (!cmds || cmds.length === 0) {
+        alert("HIBÁS UTASÍTÁS! Használd az E, H, J, B betűket.");
+        inputField.value = "";
+        return;
+    }
 
-let x=Math.floor(Math.random()*size)
-let y=Math.floor(Math.random()*size)
-
-ship={x,y}
-
-document.getElementById(`c${x}_${y}`).innerHTML="🚢"
-
+    // Clear command line immediately after reading
+    inputField.value = "";
+    displaySequence(cmds);
+    animateSequence(cmds);
 }
 
-function placePirate(){
-
-let side=Math.floor(Math.random()*4)
-
-if(side===0) pirate={x:Math.floor(Math.random()*size),y:0,dir:2}
-if(side===1) pirate={x:Math.floor(Math.random()*size),y:size-1,dir:0}
-if(side===2) pirate={x:0,y:Math.floor(Math.random()*size),dir:1}
-if(side===3) pirate={x:size-1,y:Math.floor(Math.random()*size),dir:3}
-
-drawPirate()
-
+function displaySequence(cmds) {
+    document.getElementById("cmdDisplay").innerHTML = cmds.map((c, i) => `<span id="cmd${i}">${c}</span>`).join(" ");
 }
 
-function drawPirate(){
+function animateSequence(cmds) {
+    let canvas = document.getElementById("pathCanvas");
+    let ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#f44336"; 
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    
+    let stepIdx = 0;
+    function next() {
+        if (stepIdx >= cmds.length) {
+            evaluate();
+            return;
+        }
 
-let arrows=["↑","→","↓","←"]
+        document.querySelectorAll("#cmdDisplay span").forEach(s => s.classList.remove("activeCmd"));
+        document.getElementById("cmd" + stepIdx).classList.add("activeCmd");
 
-let cell=document.getElementById(`c${pirate.x}_${pirate.y}`)
+        let oldX = pirate.x, oldY = pirate.y;
+        let cmd = cmds[stepIdx];
 
-if(pirate.x===ship.x && pirate.y===ship.y)
-cell.innerHTML="🚢"+arrows[pirate.dir]
-else
-cell.innerHTML=arrows[pirate.dir]
+        if (cmd === "J") pirate.dir = (pirate.dir + 1) % 4;
+        else if (cmd === "B") pirate.dir = (pirate.dir + 3) % 4;
+        else {
+            let moveDir = (cmd === "E" ? 1 : -1);
+            let dx = [0, 1, 0, -1], dy = [-1, 0, 1, 0];
+            pirate.x += dx[pirate.dir] * moveDir;
+            pirate.y += dy[pirate.dir] * moveDir;
+        }
 
+        if (pirate.x < 0 || pirate.y < 0 || pirate.x >= size || pirate.y >= size) {
+            alert("A KALÓZ KIESETT A PÁLYÁRÓL!");
+            newGame();
+            return;
+        }
+
+        if (boardState[pirate.y][pirate.x].hasJewel) {
+            boardState[pirate.y][pirate.x].hasJewel = false;
+            collected++;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(oldX * 45 + 22.5, oldY * 45 + 22.5);
+        ctx.lineTo(pirate.x * 45 + 22.5, pirate.y * 45 + 22.5);
+        ctx.stroke();
+
+        render();
+        document.getElementById("steps").innerText = "Lépés: " + (stepIdx + 1);
+        stepIdx++;
+        setTimeout(next, 250);
+    }
+    next();
 }
 
-function parseCommands(text){
+function evaluate() {
+    let timeTaken = (Date.now() - startTime) / 1000;
+    if (pirate.x === ship.x && pirate.y === ship.y && collected === jewelsCount) {
+        alert("GRATULÁLOK! Sikerült!");
+        let name = document.getElementById("name").value || "Ismeretlen kalóz";
+        let li = document.createElement("li");
+        li.className = size === 5 ? "basic" : "advanced-score";
+        li.textContent = `${name} | ${timeTaken.toFixed(1)}s | ${collected} ékszer`;
+        document.getElementById("scores").appendChild(li);
 
-text=text.toUpperCase().replace(/,/g," ")
-let parts=text.split(/\s+/)
-
-let result=[]
-
-for(let p of parts){
-
-if(p==="") continue
-
-let match=p.match(/^(\d*)([JBEH])(\d*)$/)
-
-if(!match) return null
-
-let n=parseInt(match[1]||match[3]||1)
-let cmd=match[2]
-
-for(let i=0;i<n;i++) result.push(cmd)
-
+        if (timeTaken < 60 && !isAdvanced) {
+            size = 10; jewelsCount = 10; isAdvanced = true;
+            document.getElementById("advanced").innerText = "Emelt szint (10x10)";
+        }
+        newGame();
+    } else {
+        alert("Sajnos nem sikerült. Gyűjtsd össze az összes ékszert és érj a hajóhoz!");
+        newGame();
+    }
 }
 
-return result
+// Enter key trigger
+document.getElementById("commands").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        run();
+    }
+});
 
+function fullscreen() {
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
 }
 
-function run(){
-
-let text=document.getElementById("commands").value
-let cmds=parseCommands(text)
-
-if(!cmds){
-alert("HIBÁS UTASÍTÁS")
-document.getElementById("commands").value=""
-return
-}
-
-displayCommands(cmds)
-
-let time=(Date.now()-startTime)/1000
-
-animate(cmds,time)
-
-}
-
-function displayCommands(cmds){
-
-let html=""
-
-cmds.forEach((c,i)=>{
-html+=`<span id="cmd${i}">${c}</span> `
-})
-
-document.getElementById("cmdDisplay").innerHTML=html
-
-}
-
-function animate(cmds,time){
-
-let canvas=document.getElementById("pathCanvas")
-let ctx=canvas.getContext("2d")
-
-ctx.strokeStyle="red"
-ctx.lineWidth=3
-
-let i=0
-let steps=0
-
-function step(){
-
-if(i>=cmds.length){
-finish(time,steps)
-return
-}
-
-document.querySelectorAll("#cmdDisplay span").forEach(s=>s.classList.remove("activeCmd"))
-document.getElementById("cmd"+i).classList.add("activeCmd")
-
-let cmd=cmds[i]
-
-let px=pirate.x
-let py=pirate.y
-
-if(cmd==="J") pirate.dir=(pirate.dir+1)%4
-if(cmd==="B") pirate.dir=(pirate.dir+3)%4
-
-if(cmd==="E") move(1)
-if(cmd==="H") move(-1)
-
-ctx.beginPath()
-ctx.moveTo(px*40+20,py*40+20)
-ctx.lineTo(pirate.x*40+20,pirate.y*40+20)
-ctx.stroke()
-
-drawPirate()
-
-steps++
-document.getElementById("steps").innerText="Lépések: "+steps
-
-i++
-
-setTimeout(step,200)
-
-}
-
-function move(dir){
-
-let dx=[0,1,0,-1]
-let dy=[-1,0,1,0]
-
-let d=pirate.dir
-
-pirate.x+=dx[d]*dir
-pirate.y+=dy[d]*dir
-
-if(pirate.x<0||pirate.y<0||pirate.x>=size||pirate.y>=size){
-alert("EZ MOST NEM SIKERÜLT")
-newGame()
-throw ""
-}
-
-let cell=board[pirate.y][pirate.x]
-
-if(cell.jewel){
-cell.jewel=false
-document.getElementById(`c${pirate.x}_${pirate.y}`).innerHTML=""
-collected++
-}
-
-}
-
-step()
-
-}
-
-function finish(time,steps){
-
-if(pirate.x===ship.x && pirate.y===ship.y && collected===jewels){
-
-alert("HURRÁ!")
-
-let name=document.getElementById("name").value||"?"
-
-let li=document.createElement("li")
-
-if(size===5){
-li.className="basic"
-}else{
-li.className="advanced"
-}
-
-li.textContent=name+" – "+time.toFixed(1)+" s – "+steps+" lépés"
-
-document.getElementById("scores").appendChild(li)
-
-if(time<60 && !advanced){
-
-size=10
-jewels=10
-advanced=true
-
-document.getElementById("advanced").innerText="Emelt szint"
-
-}
-
-newGame()
-
-}else{
-
-alert("EZ MOST NEM SIKERÜLT")
-newGame()
-
-}
-
-}
-
-function fullscreen(){
-
-if(document.documentElement.requestFullscreen)
-document.documentElement.requestFullscreen()
-
-}
-
-document.getElementById("commands").addEventListener("keypress",function(e){
-if(e.key==="Enter") run()
-})
-
-newGame()
-
+newGame();
 </script>
-
 </body>
 </html>
